@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
@@ -33,9 +33,48 @@ async function run() {
     console.log("Successfully connected to MongoDB!");
 
     const serviceCollection = client.db("carDoctor").collection("services");
+    const bookingCollection = client.db("carDoctor").collection("bookings");
 
     app.get("/services", async (req, res) => {
       const cursor = serviceCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    app.get("/services/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await serviceCollection.findOne(query);
+      res.send(result);
+    });
+
+    app.get("/other-services/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: { $ne: new ObjectId(id) } };
+      const cursor = serviceCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    // For checkout
+    app.get("/checkout", async (req, res) => {
+      const id = req.query.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await serviceCollection.findOne(query);
+      res.send(result);
+    });
+
+    app.post("/bookings", async (req, res) => {
+      const bookingInfo = req.body;
+      const result = await bookingCollection.insertOne(bookingInfo);
+      res.send(result);
+    });
+
+    // To get bookings based on user email
+    app.get("/bookings", async (req, res) => {
+      const email = req.query.email;
+      const query = { email };
+      const cursor = bookingCollection.find(query);
       const result = await cursor.toArray();
       res.send(result);
     });
